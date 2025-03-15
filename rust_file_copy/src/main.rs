@@ -1,6 +1,8 @@
+/*Written by Andy Kukuc */
+
 use std::fs;
 use std::io::{stdin, stdout, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::io::Result;
 use std::time::Instant;
 
@@ -45,6 +47,25 @@ fn copy_file(src_file: &Path, dest_dir: &Path) -> Result<u64> {
     Ok(bytes)
 }
 
+/// Prompts the user for input with dynamic path validation.
+fn input_from_user_with_validation(prompt: &str) -> PathBuf {
+    loop {
+        let mut input = String::new();
+        print!("{}", prompt);
+        stdout().flush().expect("Failed to flush stdout");
+        stdin().read_line(&mut input).expect("Failed to read line");
+        let trimmed = input.trim();
+        let path = PathBuf::from(trimmed);
+
+        if path.exists() {
+            println!("✔ Path validated: {:?}", path);
+            return path;
+        } else {
+            println!("❌ Path does not exist. Try again.");
+        }
+    }
+}
+
 /// Prompts the user for input, flushes stdout to ensure the prompt is shown,
 /// and returns the trimmed input as a String.
 fn input_from_user(prompt: &str) -> String {
@@ -55,23 +76,26 @@ fn input_from_user(prompt: &str) -> String {
     input.trim().to_string()
 }
 
+
 fn main() -> Result<()> {
     loop {
         // Prompt the user for the source directory or "q" to quit.
-        let src = input_from_user("Enter the source directory path (or 'q' to quit): ");
-        if src.to_lowercase() == "q" {
+        println!("\nEnter the source directory path or 'q' to quit.");
+        let src_path = input_from_user_with_validation("Source directory: ");
+
+        if src_path.to_string_lossy().to_lowercase() == "q" {
             println!("Exiting.");
             break;
         }
-        let src_path = Path::new(&src);
-        if !src_path.exists() || !src_path.is_dir() {
-            println!("The source '{}' is not a valid directory.", src);
+
+        if !src_path.is_dir() {
+            println!("The source '{}' is not a valid directory.", src_path.display());
             continue;
         }
 
         // List the contents of the source directory.
-        println!("\nContents of '{}':", src);
-        match fs::read_dir(src_path) {
+        println!("\nContents of '{}':", src_path.display());
+        match fs::read_dir(&src_path) {
             Ok(entries) => {
                 for entry in entries.filter_map(Result::ok) {
                     let path = entry.path();
@@ -103,10 +127,9 @@ fn main() -> Result<()> {
         let start = Instant::now();
         let total_bytes = match choice.to_lowercase().as_str() {
             "f" => {
-                // Copy a specific file.
-                let filename =
+                let file_name =
                     input_from_user("Enter the specific file name (with extension) to copy: ");
-                let file_path = src_path.join(&filename);
+                let file_path = src_path.join(&file_name);
                 if !file_path.exists() || !file_path.is_file() {
                     println!(
                         "The file '{:?}' does not exist or is not a valid file.",
@@ -114,13 +137,8 @@ fn main() -> Result<()> {
                     );
                     continue;
                 }
-                let dest = input_from_user("Enter the destination directory path (or 'q' to quit): ");
-                if dest.to_lowercase() == "q" {
-                    println!("Exiting.");
-                    break;
-                }
-                let dest_path = Path::new(&dest);
-                match copy_file(&file_path, dest_path) {
+                let dest_path = input_from_user_with_validation("Destination directory: ");
+                match copy_file(&file_path, &dest_path) {
                     Ok(bytes) => {
                         println!("File copied successfully.");
                         bytes
@@ -132,14 +150,8 @@ fn main() -> Result<()> {
                 }
             }
             "d" => {
-                // Copy the entire directory recursively.
-                let dest = input_from_user("Enter the destination directory path (or 'q' to quit): ");
-                if dest.to_lowercase() == "q" {
-                    println!("Exiting.");
-                    break;
-                }
-                let dest_path = Path::new(&dest);
-                match recursive_copy(src_path, dest_path) {
+                let dest_path = input_from_user_with_validation("Destination directory: ");
+                match recursive_copy(&src_path, &dest_path) {
                     Ok(bytes) => {
                         println!("Directory copied successfully.");
                         bytes
@@ -160,7 +172,6 @@ fn main() -> Result<()> {
         let duration = start.elapsed();
         let seconds = duration.as_secs_f64();
         if seconds > 0.0 {
-            // Convert total bytes to gigabytes (1 GB = 1024^3 bytes)
             let gigabytes = total_bytes as f64 / (1024.0 * 1024.0 * 1024.0);
             let speed_gbps = gigabytes / seconds;
             println!(
@@ -176,8 +187,6 @@ fn main() -> Result<()> {
             println!("Exiting.");
             break;
         }
-        println!(); // Blank line for clarity.
     }
     Ok(())
 }
-
