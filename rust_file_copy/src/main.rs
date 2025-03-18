@@ -1,4 +1,4 @@
-/*Written by Andy Kukuc */
+/*Written by Andy Kukuc*/
 
 use std::fs;
 use std::io::{stdin, stdout, Write};
