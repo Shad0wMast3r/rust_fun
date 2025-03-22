@@ -400,3 +400,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+cmd_exec/backend/Cargo.lock
+cmd_exec/backend/target/.rustc_info.json
+cmd_exec/backend/target/CACHEDIR.TAG
