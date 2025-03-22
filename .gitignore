@@ -403,3 +403,10 @@ FodyWeavers.xsd
 cmd_exec/backend/Cargo.lock
 cmd_exec/backend/target/.rustc_info.json
 cmd_exec/backend/target/CACHEDIR.TAG
+wasm_code/wasm_site_1/target/.rustc_info.json
+wasm_code/wasm_site_1/backend/target/CACHEDIR.TAG
+wasm_code/wasm_site_1/backend/target/.rustc_info.json
+wasm_code/wasm_site_1/target/.rustc_info.json
+wasm_code/wasm_site_1/target/.rustc_info.json
+wasm_code/wasm_site_1/Cargo.lock
+wasm_code/wasm_site_1/Cargo.lock
