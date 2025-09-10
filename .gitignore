@@ -410,3 +410,7 @@ wasm_code/wasm_site_1/target/.rustc_info.json
 wasm_code/wasm_site_1/target/.rustc_info.json
 wasm_code/wasm_site_1/Cargo.lock
 wasm_code/wasm_site_1/Cargo.lock
+
+# Local environment files (secrets, API keys, etc.)
+.env
+.env.*
