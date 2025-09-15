@@ -1,0 +1,19 @@
+[package]
+name = "ipad_copy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+walkdir = "2"
+indicatif = "0.17"
+clap = { version = "4", features = ["derive"] }
+rusty_libimobiledevice = "0.2.3"
+
+# Optional HEIC conversion stack
+libheif-rs = { version = "2.2", optional = true }
+image      = { version = "0.24", optional = true }
+
+[features]
+heif_native = ["libheif-rs", "image"]
+default = []

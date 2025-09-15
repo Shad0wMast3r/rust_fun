@@ -414,3 +414,35 @@ wasm_code/wasm_site_1/Cargo.lock
 # Local environment files (secrets, API keys, etc.)
 .env
 .env.*
+
+# Build artifacts
+/target/
+/**/*.rs.bk
+
+# Dependency lockfile (optional — only ignore if you're not pinning versions)
+/Cargo.lock
+
+# IDE/editor files
+*.swp
+*.swo
+*.bak
+*.tmp
+*.log
+*.DS_Store
+*.vscode/
+*.idea/
+*.code-workspace
+
+# OS-specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Rust-specific
+.rustc_info.json
+CACHEDIR.TAG
+
+# Misc
+*.old
+*.orig
+
