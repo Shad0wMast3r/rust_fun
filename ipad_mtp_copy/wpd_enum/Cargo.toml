@@ -1,0 +1,11 @@
+[package]
+name = "wpd_enum"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+windows = { version = "0.62", features = [
+    "Win32_Devices_PortableDevices",
+    "Win32_System_Com",
+    "Win32_Foundation"
+] }

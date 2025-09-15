@@ -1,0 +1,8 @@
+[package]
+name = "ipad_mtp_copy"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+wpd_enum = { path = "wpd_enum" }
