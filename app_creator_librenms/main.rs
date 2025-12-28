@@ -1,12 +1,6 @@
-// SPDX-License-Identifier: MIT
-// Author: Andy Kukuc (Creator)
-// Contributor: Microsoft Copilot
-
-use std::fs::{self, File};
+use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path::Path;
-use std::process::Command;
-use std::env;
+use std::path::{Path, PathBuf};
 
 /// Struct to hold parsed Speedtest metrics
 #[derive(Debug)]
@@ -16,8 +10,8 @@ struct SpeedtestMetrics {
 }
 
 /// Parse raw output from Speedtest shell script
-fn parse_speedtest_output(output_path: &str) -> Option<SpeedtestMetrics> {
-    let file = File::open(output_path).ok()?;
+fn parse_speedtest_output(output_path: &str) -> Result<SpeedtestMetrics, String> {
+    let file = File::open(output_path)?;
     let reader = BufReader::new(file);
 
     let mut down = None;
@@ -35,14 +29,18 @@ fn parse_speedtest_output(output_path: &str) -> Option<SpeedtestMetrics> {
         }
     }
 
-    Some(SpeedtestMetrics {
+    if down.is_none() || up.is_none() {
+        return Err(String::from("Could not parse Speedtest output."));
+    }
+
+    Ok(SpeedtestMetrics {
         down_local: down?,
         up_local: up?,
     })
 }
 
 /// Update LibreNMS RRD files with parsed metrics
-fn update_rrd(rrd_dir: &str, metrics: &SpeedtestMetrics) {
+fn update_rrd(rrd_dir: &str, metrics: &SpeedtestMetrics) -> Result<(), String> {
     let down_rrd = format!("{}/down_local.rrd", rrd_dir);
     let up_rrd = format!("{}/up_local.rrd", rrd_dir);
 
@@ -51,8 +49,13 @@ fn update_rrd(rrd_dir: &str, metrics: &SpeedtestMetrics) {
             let _ = Command::new("rrdtool")
                 .args(["update", path, &format!("N:{}", value)])
                 .status();
+        } else {
+            eprintln!("RRD file {} does not exist.", path);
+            return Err(String::from("RRD file does not exist."));
         }
     }
+
+    Ok(())
 }
 
 /// Get the system hostname
@@ -103,10 +106,7 @@ fn main() {
 
     let rrd_path = format!("{}/{}", rrd_base, app_name);
 
-    if let Some(metrics) = parse_speedtest_output(output_path) {
-        println!("Parsed metrics: {:?}", metrics);
-        update_rrd(&rrd_path, &metrics);
-    } else {
-        eprintln!("Failed to parse Speedtest output.");
-    }
+    let metrics = parse_speedtest_output(output_path)?;
+
+    update_rrd(&rrd_path, &metrics)
 }
