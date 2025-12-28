@@ -5,6 +5,7 @@ use dotenv::dotenv;
 use std::env;
 use chrono::{Duration, Utc};
 use std::io::{self, Write};
+use imap::types::Fetch;
 
 //Author: Andy Kukuc
 //Contributors: CoPilot and Gemini
@@ -29,14 +30,27 @@ fn get_folder_message_count(session: &mut Session<native_tls::TlsStream<TcpStrea
 fn list_folders(session: &mut Session<native_tls::TlsStream<TcpStream>>) -> imap::error::Result<Vec<String>> {
     let folders = session.list(None, Some("*"))?;
     let mut names = Vec::new();
+    let mut total_bytes = 0u64;
     println!("\nAvailable folders/labels:");
     for (i, folder) in folders.iter().enumerate() {
         let folder_name = folder.name();
-        // Get message count for each folder
         let count = get_folder_message_count(session, folder_name).unwrap_or(0);
-        println!("{}: {} ({} messages)", i + 1, folder_name, count);
+        let size = get_folder_size(session, folder_name).unwrap_or(0);
+        total_bytes += size;
+        println!(
+            "{}: {} ({} messages, {:.2} MB)",
+            i + 1,
+            folder_name,
+            count,
+            size as f64 / (1024.0 * 1024.0)
+        );
         names.push(folder_name.to_string());
     }
+    println!(
+        "\nTotal mailbox usage: {:.2} MB ({:.2} GB)",
+        total_bytes as f64 / (1024.0 * 1024.0),
+        total_bytes as f64 / (1024.0 * 1024.0 * 1024.0)
+    );
     Ok(names)
 }
 
@@ -57,6 +71,22 @@ fn cleanup_folder(session: &mut Session<native_tls::TlsStream<TcpStream>>, folde
     session.expunge()?;
     println!("Cleanup complete.");
     Ok(())
+}
+
+// Add this function to get the total size of all messages in a folder (in bytes)
+fn get_folder_size(session: &mut Session<native_tls::TlsStream<TcpStream>>, folder: &str) -> imap::error::Result<u64> {
+    session.select(folder)?;
+    let uids = session.search("ALL")?;
+    if uids.is_empty() {
+        return Ok(0);
+    }
+    let uid_set = uids.iter().map(|u| u.to_string()).collect::<Vec<_>>().join(",");
+    let fetches = session.fetch(uid_set, "RFC822.SIZE")?;
+    let total_size: u64 = fetches.iter()
+        .filter_map(|f: &Fetch| f.size)
+        .map(|s| s as u64)
+        .sum();
+    Ok(total_size)
 }
 
 fn main() {
