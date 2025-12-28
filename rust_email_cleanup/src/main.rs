@@ -16,9 +16,14 @@ fn connect_to_yahoo(username: &str, password: &str)
     let tcp_stream = TcpStream::connect(("imap.mail.yahoo.com", 993))?;
     let tls_stream = tls.connect("imap.mail.yahoo.com", tcp_stream)
         .map_err(|e| imap::error::Error::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
-    let mut client = imap::Client::new(tls_stream);
+    let client = imap::Client::new(tls_stream);
     let session = client.login(username, password).map_err(|e| e.0)?;
     Ok(session)
+}
+
+fn get_folder_message_count(session: &mut Session<native_tls::TlsStream<TcpStream>>, folder: &str) -> imap::error::Result<u32> {
+    let mailbox = session.examine(folder)?;
+    Ok(mailbox.exists)
 }
 
 fn list_folders(session: &mut Session<native_tls::TlsStream<TcpStream>>) -> imap::error::Result<Vec<String>> {
@@ -26,8 +31,11 @@ fn list_folders(session: &mut Session<native_tls::TlsStream<TcpStream>>) -> imap
     let mut names = Vec::new();
     println!("\nAvailable folders/labels:");
     for (i, folder) in folders.iter().enumerate() {
-        println!("{}: {}", i + 1, folder.name());
-        names.push(folder.name().to_string());
+        let folder_name = folder.name();
+        // Get message count for each folder
+        let count = get_folder_message_count(session, folder_name).unwrap_or(0);
+        println!("{}: {} ({} messages)", i + 1, folder_name, count);
+        names.push(folder_name.to_string());
     }
     Ok(names)
 }
@@ -67,7 +75,7 @@ fn main() {
                     if let Ok(index) = choice.trim().parse::<usize>() {
                         if index > 0 && index <= folders.len() {
                             let folder_name = &folders[index - 1];
-                            if let Err(e) = cleanup_folder(&mut session, folder_name, 30) {
+                            if let Err(e) = cleanup_folder(&mut session, folder_name, 14) {
                                 eprintln!("Cleanup failed: {}", e);
                             }
                         } else {
