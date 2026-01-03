@@ -1,0 +1,9 @@
+[package]
+name = "dismount_iso_qemu"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies] 
+rustyline = "17.0.1"
+serde_json = "1.0"
+base64 = "0.21"
